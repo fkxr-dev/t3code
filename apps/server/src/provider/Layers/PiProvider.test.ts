@@ -5,7 +5,11 @@ import * as Sink from "effect/Sink";
 import * as Stream from "effect/Stream";
 import { ChildProcess, ChildProcessSpawner } from "effect/unstable/process";
 
-import { checkPiProviderStatus, MINIMUM_PI_VERSION } from "./PiProvider.ts";
+import {
+  checkPiProviderStatus,
+  MINIMUM_PI_VERSION,
+  parsePiDiscoveredModels,
+} from "./PiProvider.ts";
 
 const encoder = new TextEncoder();
 
@@ -52,6 +56,34 @@ const settings = {
 } as const;
 
 describe("PiProvider", () => {
+  it("keeps the Pi provider visible when friendly model names collide", () => {
+    const models = parsePiDiscoveredModels(
+      {
+        models: [
+          { provider: "anthropic", id: "claude-fable-5", name: "Claude Fable 5" },
+          { provider: "claude-bridge", id: "claude-fable-5", name: "Claude Fable 5" },
+        ],
+      },
+      undefined,
+    );
+
+    assert.deepEqual(
+      models.map(({ slug, name, subProvider }) => ({ slug, name, subProvider })),
+      [
+        {
+          slug: "anthropic/claude-fable-5",
+          name: "Claude Fable 5",
+          subProvider: "anthropic",
+        },
+        {
+          slug: "claude-bridge/claude-fable-5",
+          name: "Claude Fable 5",
+          subProvider: "claude-bridge",
+        },
+      ],
+    );
+  });
+
   it.effect("requires the first published Pi version with entries and settlement hooks", () =>
     Effect.gen(function* () {
       const snapshot = yield* checkPiProviderStatus(settings).pipe(

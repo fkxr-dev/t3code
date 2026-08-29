@@ -88,7 +88,7 @@ function piModelsFromSettings(
   );
 }
 
-function parseDiscoveredModels(
+export function parsePiDiscoveredModels(
   data: unknown,
   defaultThinkingLevel: unknown,
 ): ReadonlyArray<ServerProviderModel> {
@@ -106,6 +106,7 @@ function parseDiscoveredModels(
     parsed.push({
       slug,
       name: recordString(model, "name") ?? slug,
+      subProvider: provider,
       isCustom: false,
       capabilities: thinkingCapabilitiesForPiModel(model, defaultThinkingLevel),
     });
@@ -138,7 +139,7 @@ const discoverPiViaRpc = (
     const commandsData = yield* connection
       .request({ type: "get_commands" })
       .pipe(Effect.orElseSucceed(() => undefined));
-    const discoveredModels = parseDiscoveredModels(
+    const discoveredModels = parsePiDiscoveredModels(
       modelsData,
       recordString(stateData, "thinkingLevel"),
     );
