@@ -598,6 +598,18 @@ interface ComposerDraftStoreState {
     threadRef: ComposerThreadTarget,
     attachments: PersistedComposerImageAttachment[],
   ) => void;
+  consumeComposerContent: (
+    threadRef: ComposerThreadTarget,
+    content: {
+      readonly prompt: string;
+      readonly imageIds: ReadonlyArray<string>;
+      readonly fileIds: ReadonlyArray<string>;
+      readonly terminalContextIds: ReadonlyArray<string>;
+      readonly elementContextIds: ReadonlyArray<string>;
+      readonly previewAnnotationIds: ReadonlyArray<string>;
+      readonly reviewCommentIds: ReadonlyArray<string>;
+    },
+  ) => void;
   clearComposerContent: (threadRef: ComposerThreadTarget) => void;
   /**
    * Clears the prompt text and attachments, preserving terminal /
@@ -3718,6 +3730,58 @@ const composerDraftStore = create<ComposerDraftStoreState>()(
           });
           Promise.resolve().then(() => {
             verifyPersistedAttachments(threadKey, attachments, set);
+          });
+        },
+        consumeComposerContent: (threadRef, content) => {
+          const threadKey = resolveComposerDraftKey(get(), threadRef) ?? "";
+          if (threadKey.length === 0) return;
+          const imageIds = new Set(content.imageIds);
+          const fileIds = new Set(content.fileIds);
+          const terminalContextIds = new Set(content.terminalContextIds);
+          const elementContextIds = new Set(content.elementContextIds);
+          const previewAnnotationIds = new Set(content.previewAnnotationIds);
+          const reviewCommentIds = new Set(content.reviewCommentIds);
+          set((state) => {
+            const current = state.draftsByThreadKey[threadKey];
+            if (!current) return state;
+            const terminalContexts = current.terminalContexts.filter(
+              (context) => !terminalContextIds.has(context.id),
+            );
+            const remainingPrompt =
+              content.prompt.length > 0 && current.prompt.startsWith(content.prompt)
+                ? current.prompt.slice(content.prompt.length)
+                : current.prompt === content.prompt
+                  ? ""
+                  : current.prompt;
+            const nextDraft: ComposerThreadDraftState = {
+              ...current,
+              prompt: ensureInlineTerminalContextPlaceholders(
+                remainingPrompt,
+                terminalContexts.length,
+              ),
+              images: current.images.filter((image) => !imageIds.has(image.id)),
+              files: current.files.filter((file) => !fileIds.has(file.id)),
+              nonPersistedImageIds: current.nonPersistedImageIds.filter(
+                (imageId) => !imageIds.has(imageId),
+              ),
+              persistedAttachments: current.persistedAttachments.filter(
+                (attachment) => !imageIds.has(attachment.id),
+              ),
+              terminalContexts,
+              elementContexts: current.elementContexts.filter(
+                (context) => !elementContextIds.has(context.id),
+              ),
+              previewAnnotations: current.previewAnnotations.filter(
+                (annotation) => !previewAnnotationIds.has(annotation.id),
+              ),
+              reviewComments: current.reviewComments.filter(
+                (comment) => !reviewCommentIds.has(comment.id),
+              ),
+            };
+            const nextDraftsByThreadKey = { ...state.draftsByThreadKey };
+            if (shouldRemoveDraft(nextDraft)) delete nextDraftsByThreadKey[threadKey];
+            else nextDraftsByThreadKey[threadKey] = nextDraft;
+            return { draftsByThreadKey: nextDraftsByThreadKey };
           });
         },
         clearComposerContent: (threadRef) => {

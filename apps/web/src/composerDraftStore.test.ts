@@ -107,8 +107,8 @@ function makeImage(input: {
   };
 }
 
-function makeFile(id: string): ComposerFileAttachment {
-  const file = new File(["report"], "report.pdf", { type: "application/pdf" });
+function makeFile(id: string, name = "report.pdf"): ComposerFileAttachment {
+  const file = new File(["report"], name, { type: "application/pdf" });
   return {
     type: "file",
     id,
@@ -301,6 +301,39 @@ describe("composerDraftStore clearComposerContent", () => {
     const draft = draftFor(threadId, TEST_ENVIRONMENT_ID);
     expect(draft).toBeUndefined();
     expect(revokeSpy).not.toHaveBeenCalledWith("blob:optimistic");
+  });
+
+  it("consumes the sent snapshot without clearing edits made while sending", () => {
+    const sentImage = makeImage({ id: "img-sent", previewUrl: "blob:sent" });
+    const lateImage = makeImage({
+      id: "img-late",
+      previewUrl: "blob:late",
+      name: "late.png",
+    });
+    const store = useComposerDraftStore.getState();
+    store.setPrompt(threadRef, "Send this");
+    store.addImages(threadRef, [sentImage]);
+    store.addFiles(threadRef, [makeFile("file-sent")]);
+
+    store.setPrompt(threadRef, "Send thisNext message");
+    store.addImages(threadRef, [lateImage]);
+    store.addFiles(threadRef, [makeFile("file-late", "late.pdf")]);
+    store.consumeComposerContent(threadRef, {
+      prompt: "Send this",
+      imageIds: ["img-sent"],
+      fileIds: ["file-sent"],
+      terminalContextIds: [],
+      elementContextIds: [],
+      previewAnnotationIds: [],
+      reviewCommentIds: [],
+    });
+
+    expect(store.getComposerDraft(threadRef)).toMatchObject({
+      prompt: "Next message",
+      images: [{ id: "img-late" }],
+      files: [{ id: "file-late" }],
+    });
+    expect(revokeSpy).not.toHaveBeenCalledWith("blob:sent");
   });
 });
 
