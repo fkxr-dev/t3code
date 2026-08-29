@@ -79,20 +79,24 @@ const hasModelCapabilities = (model: ServerProvider["models"][number]): boolean 
   (model.capabilities?.optionDescriptors?.length ?? 0) > 0;
 
 const shouldRetainMissingProviderModels = (provider: ServerProvider): boolean => {
-  if (provider.driver !== ProviderDriverKind.make("opencode")) {
+  const isOpenCode = provider.driver === ProviderDriverKind.make("opencode");
+  const isPi = provider.driver === ProviderDriverKind.make("pi");
+  if (!isOpenCode && !isPi) {
     return true;
   }
 
-  // OpenCode's initial snapshot is deliberately non-authoritative while its
-  // first probe is still running. A probe error from an installed CLI/server
-  // is likewise partial: it could not establish the current inventory.
-  // Conversely, disabled and missing-CLI snapshots are authoritative removals,
-  // as are successful ready/warning inventories (including an empty one after
-  // logout or plugin removal).
+  // Dynamic provider inventories are authoritative after successful discovery,
+  // so models removed from the provider must also disappear here. Initial and
+  // failed probes retain the last known inventory instead.
   const isPendingInitialProbe =
     provider.enabled && !provider.installed && provider.status === "warning";
   const didInstalledProviderProbeFail = provider.installed && provider.status === "error";
-  return isPendingInitialProbe || didInstalledProviderProbeFail;
+  // Pi keeps a compatible runtime selectable when optional RPC discovery fails.
+  // That snapshot is ready with unknown auth rather than error, so unknown auth
+  // from an installed Pi runtime also means its inventory is non-authoritative.
+  const couldNotEstablishPiInventory =
+    isPi && provider.installed && provider.auth.status === "unknown";
+  return isPendingInitialProbe || didInstalledProviderProbeFail || couldNotEstablishPiInventory;
 };
 
 const shouldRetainMissingOpenCodeMetadata = (provider: ServerProvider): boolean =>
