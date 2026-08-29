@@ -116,7 +116,9 @@ const shouldRetainMissingProviderModels = (provider: ServerProvider): boolean =>
 
   const isAntigravity = provider.driver === ProviderDriverKind.make("antigravity");
   const isCodex = provider.driver === ProviderDriverKind.make("codex");
-  if (!isAntigravity && !isCodex && provider.driver !== ProviderDriverKind.make("opencode")) {
+  const isOpenCode = provider.driver === ProviderDriverKind.make("opencode");
+  const isPi = provider.driver === ProviderDriverKind.make("pi");
+  if (!isAntigravity && !isCodex && !isOpenCode && !isPi) {
     return true;
   }
 
@@ -134,8 +136,16 @@ const shouldRetainMissingProviderModels = (provider: ServerProvider): boolean =>
   const isPendingInitialProbe =
     provider.enabled && !provider.installed && provider.status === "warning";
   const didInstalledProviderProbeFail = provider.installed && provider.status === "error";
+  // Pi keeps a compatible runtime selectable when optional RPC discovery fails.
+  // That snapshot is ready with unknown auth rather than error, so unknown auth
+  // from an installed Pi runtime also means its inventory is non-authoritative.
+  const couldNotEstablishPiInventory =
+    isPi && provider.installed && provider.auth.status === "unknown";
   return (
-    isPendingAntigravityAuthentication || isPendingInitialProbe || didInstalledProviderProbeFail
+    isPendingAntigravityAuthentication ||
+    isPendingInitialProbe ||
+    didInstalledProviderProbeFail ||
+    couldNotEstablishPiInventory
   );
 };
 

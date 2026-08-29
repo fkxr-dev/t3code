@@ -1377,6 +1377,62 @@ it.layer(Layer.mergeAll(NodeServices.layer, ServerSettingsModule.layerTest(), Te
         });
       });
 
+      it("drops removed Pi models after discovery and does not resurrect them on failure", () => {
+        const previousProvider = {
+          instanceId: ProviderInstanceId.make("pi"),
+          driver: ProviderDriverKind.make("pi"),
+          status: "ready",
+          enabled: true,
+          installed: true,
+          auth: { status: "authenticated", type: "pi" },
+          checkedAt: "2026-08-29T00:00:00.000Z",
+          version: "0.84.3",
+          models: [
+            {
+              slug: "default",
+              name: "Pi default",
+              isCustom: false,
+              capabilities: null,
+            },
+            {
+              slug: "claude-bridge/claude-fable-5",
+              name: "Claude Fable 5",
+              subProvider: "claude-bridge",
+              isCustom: false,
+              capabilities: null,
+            },
+            {
+              slug: "openrouter/anthropic/claude-fable-5",
+              name: "Anthropic: Claude Fable 5",
+              subProvider: "openrouter",
+              isCustom: false,
+              capabilities: null,
+            },
+          ],
+          slashCommands: [],
+          skills: [],
+        } as const satisfies ServerProvider;
+        const authoritativeProvider = {
+          ...previousProvider,
+          checkedAt: "2026-08-29T00:01:00.000Z",
+          models: previousProvider.models.slice(0, 2),
+        } satisfies ServerProvider;
+        const failedProvider = {
+          ...authoritativeProvider,
+          auth: { status: "unknown" },
+          checkedAt: "2026-08-29T00:02:00.000Z",
+          models: [previousProvider.models[0]!],
+          message:
+            "Pi is available, but T3 Code could not refresh its models and commands. The live session will retry startup.",
+        } satisfies ServerProvider;
+
+        const afterRemoval = mergeProviderSnapshot(previousProvider, authoritativeProvider);
+        const afterFailure = mergeProviderSnapshot(afterRemoval, failedProvider);
+
+        assert.deepStrictEqual(afterRemoval.models, [...authoritativeProvider.models]);
+        assert.deepStrictEqual(afterFailure.models, [...authoritativeProvider.models]);
+      });
+
       it("fills missing capabilities from the previous provider snapshot", () => {
         const previousProvider = {
           instanceId: ProviderInstanceId.make("cursor"),
