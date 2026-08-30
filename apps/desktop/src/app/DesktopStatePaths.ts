@@ -30,3 +30,18 @@ export function resolveDesktopStateDir(input: {
     input.isDevelopment && Option.isNone(normalizeConfiguredBaseDir(input.t3Home));
   return input.joinPath(input.baseDir, useDevSubdir ? "dev" : "userdata");
 }
+
+// An explicit T3CODE_HOME asks for a fully isolated install. Electron's
+// userData holds the Chromium profile, Clerk session, and single-instance
+// lock, so it must move under the configured home too — otherwise two
+// installs sharing the default appData path would collide on the lock and
+// the second one would silently quit.
+export function resolveDesktopUserDataOverride(input: {
+  readonly baseDir: string;
+  readonly joinPath: JoinPath;
+  readonly t3Home: Option.Option<string>;
+}): Option.Option<string> {
+  return Option.map(normalizeConfiguredBaseDir(input.t3Home), () =>
+    input.joinPath(input.baseDir, "electron"),
+  );
+}
