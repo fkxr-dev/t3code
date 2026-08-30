@@ -47,8 +47,6 @@ const normalizeCommitHash = (value: string): Option.Option<string> => {
 
 export const resolveUserDataPath = Effect.gen(function* () {
   const environment = yield* DesktopEnvironment.DesktopEnvironment;
-  // Legacy-path detection must not pull an explicitly isolated install back
-  // to the shared appData location.
   if (Option.isSome(environment.userDataPathOverride)) {
     return environment.userDataPathOverride.value;
   }

@@ -162,10 +162,10 @@ describe("DesktopAppIdentity", () => {
         const identity = yield* DesktopAppIdentity.DesktopAppIdentity;
         const userDataPath = yield* identity.resolveUserDataPath;
 
-        assert.equal(userDataPath, "/tmp/t3-pi/electron");
+        assert.equal(userDataPath, "/tmp/t3-test/electron");
       }),
       {
-        environment: { env: { T3CODE_HOME: "/tmp/t3-pi" } },
+        environment: { env: { T3CODE_HOME: "/tmp/t3-test" } },
         legacyPathExists: true,
       },
     ),
