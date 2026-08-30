@@ -9,6 +9,7 @@ import {
   checkPiProviderStatus,
   MINIMUM_PI_VERSION,
   parsePiDiscoveredModels,
+  resolvePiDefaultModel,
 } from "./PiProvider.ts";
 
 const encoder = new TextEncoder();
@@ -82,6 +83,48 @@ describe("PiProvider", () => {
         },
       ],
     );
+  });
+
+  it("resolves the Pi default alias to the model Pi reports in get_state", () => {
+    const model = resolvePiDefaultModel({
+      model: {
+        provider: "xai",
+        id: "grok-4.6",
+        name: "Grok 4.6",
+        reasoning: true,
+      },
+      thinkingLevel: "high",
+    });
+
+    assert.equal(model?.slug, "default");
+    assert.equal(model?.name, "Pi default (Grok 4.6)");
+    assert.equal(model?.subProvider, "xai");
+    const thinking = model?.capabilities?.optionDescriptors?.find(
+      (descriptor) => descriptor.id === "thinking",
+    );
+    assert.ok(thinking !== undefined && thinking.type === "select");
+    assert.deepEqual(
+      thinking.options.map((option) => option.id),
+      ["off", "minimal", "low", "medium", "high"],
+    );
+    assert.equal(thinking.options.find((option) => option.isDefault)?.id, "high");
+  });
+
+  it("keeps the Pi default alias unqualified without a resolved model", () => {
+    assert.equal(resolvePiDefaultModel(undefined), null);
+    assert.equal(resolvePiDefaultModel({ thinkingLevel: "high" }), null);
+    assert.equal(resolvePiDefaultModel({ model: { provider: "anthropic" } }), null);
+  });
+
+  it("exposes no thinking options when Pi's default model has no reasoning", () => {
+    const model = resolvePiDefaultModel({
+      model: { provider: "ollama", id: "llama3.1:8b" },
+      thinkingLevel: "high",
+    });
+
+    assert.equal(model?.name, "Pi default (llama3.1:8b)");
+    assert.equal(model?.subProvider, "ollama");
+    assert.deepEqual(model?.capabilities?.optionDescriptors, []);
   });
 
   it.effect("requires the first published Pi version with entries and settlement hooks", () =>
