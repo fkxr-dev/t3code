@@ -111,12 +111,32 @@ export function resolvePiDefaultModel(stateData: unknown): ServerProviderModel |
   };
 }
 
+/**
+ * `fkxr-dev/pi` fork compatibility. Reads the new `scopedModels` field
+ * from model discovery; which returns a subset of models respecting
+ * `--models` and `enabledModels` args and config.
+ */
+function piScopedModelSlugs(data: unknown): ReadonlySet<string> | null {
+  const scoped = recordField(data, "scopedModels");
+  if (!Array.isArray(scoped)) return null;
+  const slugs = new Set<string>();
+  for (const entry of scoped) {
+    const model = recordField(entry, "model");
+    const provider = recordString(model, "provider");
+    const id = recordString(model, "id");
+    if (provider === undefined || id === undefined) continue;
+    slugs.add(`${provider}/${id}`);
+  }
+  return slugs.size > 0 ? slugs : null;
+}
+
 export function parsePiDiscoveredModels(
   data: unknown,
   defaultThinkingLevel: unknown,
 ): ReadonlyArray<ServerProviderModel> {
   const models = recordField(data, "models");
   if (!Array.isArray(models)) return [];
+  const scopedSlugs = piScopedModelSlugs(data);
   const seen = new Set<string>();
   const parsed: Array<ServerProviderModel> = [];
   for (const model of models) {
@@ -126,6 +146,7 @@ export function parsePiDiscoveredModels(
     const slug = `${provider}/${id}`;
     if (seen.has(slug)) continue;
     seen.add(slug);
+    if (scopedSlugs !== null && !scopedSlugs.has(slug)) continue;
     parsed.push({
       slug,
       name: recordString(model, "name") ?? slug,
