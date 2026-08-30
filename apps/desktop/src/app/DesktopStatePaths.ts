@@ -30,3 +30,13 @@ export function resolveDesktopStateDir(input: {
     input.isDevelopment && Option.isNone(normalizeConfiguredBaseDir(input.t3Home));
   return input.joinPath(input.baseDir, useDevSubdir ? "dev" : "userdata");
 }
+
+export function resolveDesktopUserDataOverride(input: {
+  readonly baseDir: string;
+  readonly joinPath: JoinPath;
+  readonly t3Home: Option.Option<string>;
+}): Option.Option<string> {
+  return Option.map(normalizeConfiguredBaseDir(input.t3Home), () =>
+    input.joinPath(input.baseDir, "electron"),
+  );
+}

@@ -98,6 +98,7 @@ describe("DesktopEnvironment", () => {
       assert.equal(environment.serverSettingsPath, "/tmp/t3/userdata/settings.json");
       assert.equal(environment.userDataDirName, "t3code");
       assert.equal(environment.legacyUserDataDirName, "T3 Code (Alpha)");
+      assert.deepEqual(environment.userDataPathOverride, Option.some("/tmp/t3/electron"));
     }),
   );
 
@@ -129,6 +130,8 @@ describe("DesktopEnvironment", () => {
 
       assert.equal(development.stateDir, "/Users/alice/.t3/dev");
       assert.equal(production.stateDir, "/Users/alice/.t3/userdata");
+      assert.deepEqual(development.userDataPathOverride, Option.none());
+      assert.deepEqual(production.userDataPathOverride, Option.none());
     }),
   );
 
