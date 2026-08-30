@@ -166,13 +166,13 @@ mobile SSO redirect allowlist:
 
 ```text
 t3code-dev://app/
-t3code://app/
+t3code-pi://app/
 ```
 
-Local desktop development uses `t3code-dev://app`, while packaged builds use `t3code://app`. Add the
-matching origin to each Clerk instance's Backend API `allowed_origins` array as well. The development
-Clerk instance should only need `t3code-dev://app`; the production Clerk instance should only need
-`t3code://app`. `@clerk/electron` owns the native request adapter, encrypted Clerk token persistence,
+Local desktop development uses `t3code-dev://app`, while packaged builds use `t3code-pi://app`. Add
+the matching origin to each Clerk instance's Backend API `allowed_origins` array as well. The
+development Clerk instance should only need `t3code-dev://app`; the production Clerk instance should
+only need `t3code-pi://app`. `@clerk/electron` owns the native request adapter, encrypted Clerk token persistence,
 external-browser OAuth transport, and callback delivery for initial sign-in and linked-account flows.
 
 There is currently no Dashboard UI for `allowed_origins`. Preserve any existing entries and update
@@ -182,7 +182,7 @@ the instance through the Backend API:
 curl -X PATCH https://api.clerk.com/v1/instance \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer $CLERK_SECRET_KEY" \
-  -d '{"allowed_origins":["t3code://app"]}'
+  -d '{"allowed_origins":["t3code-pi://app"]}'
 ```
 
 Never put `CLERK_SECRET_KEY` in the desktop app, a client-facing environment file, or a build
@@ -229,7 +229,7 @@ binary from another:
 ```sh
 VITE_DEV_SERVER_URL=http://127.0.0.1:5733 \
 T3CODE_PORT=13773 \
-  "/Applications/T3 Code (Alpha).app/Contents/MacOS/T3 Code (Alpha)"
+  "/Applications/T3 Code (Pi).app/Contents/MacOS/T3 Code (Pi)"
 ```
 
 After changing Associated Domains, bump the build version before rebuilding; macOS may otherwise
@@ -238,8 +238,8 @@ reuse stale Shared Web Credentials metadata for the same app/version pair.
 Verify the installed bundle before testing:
 
 ```sh
-codesign --verify --deep --strict "/Applications/T3 Code (Alpha).app"
-codesign -d --entitlements :- "/Applications/T3 Code (Alpha).app"
+codesign --verify --deep --strict "/Applications/T3 Code (Pi).app"
+codesign -d --entitlements :- "/Applications/T3 Code (Pi).app"
 ```
 
 The current mobile UI uses Clerk's native authentication view. If a future mobile browser OAuth

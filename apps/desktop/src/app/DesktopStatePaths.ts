@@ -15,8 +15,10 @@ export function resolveDesktopBaseDir(input: {
   readonly joinPath: JoinPath;
   readonly t3Home: Option.Option<string>;
 }): string {
+  // Pi fork: default to a dedicated home so this install runs side by side
+  // with an official T3 Code install without sharing any state.
   return Option.getOrElse(normalizeConfiguredBaseDir(input.t3Home), () =>
-    input.joinPath(input.homeDirectory, ".t3"),
+    input.joinPath(input.homeDirectory, ".t3-pi"),
   );
 }
 

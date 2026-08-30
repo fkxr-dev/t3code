@@ -23,6 +23,12 @@ describe("ElectronProtocol", () => {
     unhandleMock.mockReset();
   });
 
+  it("uses fork-specific production protocol identity", () => {
+    assert.equal(ElectronProtocol.getDesktopScheme(false), "t3code-pi");
+    assert.equal(ElectronProtocol.getDesktopUrl(false), "t3code-pi://app/");
+    assert.equal(ElectronProtocol.getDesktopScheme(true), "t3code-dev");
+  });
+
   it.effect("proxies the stable renderer origin to the current app server", () =>
     Effect.gen(function* () {
       let handler: ((request: Request) => Promise<Response>) | undefined;
