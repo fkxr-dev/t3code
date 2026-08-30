@@ -85,6 +85,46 @@ describe("PiProvider", () => {
     );
   });
 
+  // `fkxr-dev/pi` fork compatibility.
+  it("honors Pi's reported model scope when scopedModels is present", () => {
+    const models = parsePiDiscoveredModels(
+      {
+        models: [
+          { provider: "codex", id: "gpt-5.6-sol" },
+          { provider: "anthropic", id: "claude-opus-4-7" },
+          { provider: "anthropic", id: "claude-opus-4-7" },
+        ],
+        scopedModels: [
+          { model: { provider: "anthropic", id: "claude-opus-4-7" } },
+          { model: { provider: "codex", id: "gpt-5.6-sol" }, thinkingLevel: "high" },
+          { model: { provider: "codex" } },
+        ],
+      },
+      undefined,
+    );
+
+    assert.deepEqual(
+      models.map((model) => model.slug),
+      ["codex/gpt-5.6-sol", "anthropic/claude-opus-4-7"],
+    );
+  });
+
+  it("keeps the full catalogue when Pi reports no scope", () => {
+    const catalogue = [
+      { provider: "codex", id: "gpt-5.6-sol" },
+      { provider: "anthropic", id: "claude-opus-4-7" },
+    ];
+    const allSlugs = ["codex/gpt-5.6-sol", "anthropic/claude-opus-4-7"];
+
+    for (const scopedModels of [undefined, [], "bogus", [{ model: { provider: "x" } }]]) {
+      const models = parsePiDiscoveredModels({ models: catalogue, scopedModels }, undefined);
+      assert.deepEqual(
+        models.map((model) => model.slug),
+        allSlugs,
+      );
+    }
+  });
+
   it("resolves the Pi default alias to the model Pi reports in get_state", () => {
     const model = resolvePiDefaultModel({
       model: {
