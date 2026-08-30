@@ -17,10 +17,13 @@ execution mode or select a session because T3 owns those parts of the process li
 ## What Carries Over
 
 T3 Code discovers the models reported by Pi and exposes their supported thinking levels. The
-thinking picker marks Pi's current configured level as the default without overriding it. Threads
-use Pi's native session files for resume, rollback, and forks within the same Pi instance. Forks
-preserve the native conversation through the selected turn in the destination workspace.
-Switching providers uses portable conversation context. Extension
+model picker's `Pi default` entry follows Pi's own configuration: it shows the model Pi resolved,
+for example `Pi default (GPT 5.6 Sol)` with its provider, and exposes that model's thinking
+levels. Selecting it never pins the thread to an explicit model, so it keeps tracking whatever
+Pi's settings resolve to. The thinking picker marks Pi's current configured level as the default
+without overriding it. Threads use Pi's native session files for resume, rollback, and forks
+within the same Pi instance. Forks preserve the native conversation through the selected turn in
+the destination workspace. Switching providers uses portable conversation context. Extension
 dialogs appear in the T3 Code composer, and the composer context meter follows Pi's own usage
 reporting while a response streams and after it settles.
 
@@ -57,8 +60,9 @@ threads.
 - If Pi is unavailable, confirm that the configured binary runs on the server machine, then refresh
   the provider in Settings.
 - If no models appear, open Pi directly and confirm its authentication and model configuration.
-- If discovery cannot complete, T3 Code keeps Pi available with the `Pi default` model. Start a
-  thread to let the interactive Pi session handle any startup prompt.
+- If discovery cannot complete, T3 Code keeps Pi available with an unlabeled `Pi default` model
+  and without its thinking levels. Start a thread to let the interactive Pi session handle any
+  startup prompt, then refresh the provider to resolve the default model's identity.
 - If a project extension is missing, approve the project in Pi, then start a fresh provider session.
 - If a project skill is missing from the `$` menu, approve the project in Pi and refresh the provider.
 - The context meter appears once Pi reports usage for the thread. Some model providers only

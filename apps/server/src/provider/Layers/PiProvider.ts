@@ -87,18 +87,41 @@ const PI_DEFAULT_MODEL: ServerProviderModel = {
 
 interface PiDiscovery extends PiDiscoveredCommands {
   readonly models: ReadonlyArray<ServerProviderModel>;
+  readonly defaultModel: ServerProviderModel | null;
   readonly authenticated: boolean;
 }
 
 function piModelsFromSettings(
   customModels: ReadonlyArray<CustomModelSetting> | undefined,
   discovered: ReadonlyArray<ServerProviderModel> = [],
+  defaultModel: ServerProviderModel = PI_DEFAULT_MODEL,
 ): ReadonlyArray<ServerProviderModel> {
   return providerModelsFromSettings(
-    [PI_DEFAULT_MODEL, ...discovered],
+    [defaultModel, ...discovered],
     customModels ?? [],
     EMPTY_PI_MODEL_CAPABILITIES,
   );
+}
+
+/**
+ * Materializes the "Pi default" alias with the model Pi actually resolved.
+ * `get_state` returns the full model object, so the alias carries that
+ * model's display name, sub-provider, and thinking levels while its slug
+ * stays `default`: selecting it still means "inherit Pi's own configuration"
+ * and never pins the session to an explicit model.
+ */
+export function resolvePiDefaultModel(stateData: unknown): ServerProviderModel | null {
+  const model = recordField(stateData, "model");
+  const provider = recordString(model, "provider");
+  const id = recordString(model, "id");
+  if (provider === undefined || id === undefined) return null;
+  const name = recordString(model, "name") ?? id;
+  return {
+    ...PI_DEFAULT_MODEL,
+    name: `Pi default (${name})`,
+    subProvider: provider,
+    capabilities: thinkingCapabilitiesForPiModel(model, recordString(stateData, "thinkingLevel")),
+  };
 }
 
 export function parsePiDiscoveredModels(
@@ -166,6 +189,7 @@ const discoverPiViaRpc = (
       models: discoveredModels,
       slashCommands: withPiBuiltinSlashCommands(slashCommands),
       skills,
+      defaultModel: resolvePiDefaultModel(stateData),
       authenticated: discoveredModels.length > 0,
     } satisfies PiDiscovery;
   }).pipe(Effect.scoped);
@@ -397,7 +421,11 @@ export const checkPiProviderStatus = Effect.fn("checkPiProviderStatus")(function
   }
 
   const discovery = discoveryExit.value.value;
-  const models = piModelsFromSettings(piSettings.customModels, discovery.models);
+  const models = piModelsFromSettings(
+    piSettings.customModels,
+    discovery.models,
+    discovery.defaultModel ?? PI_DEFAULT_MODEL,
+  );
   return buildServerProvider({
     presentation: PI_PRESENTATION,
     enabled: piSettings.enabled,
