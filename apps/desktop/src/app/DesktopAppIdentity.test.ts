@@ -158,6 +158,21 @@ describe("DesktopAppIdentity", () => {
     ),
   );
 
+  it.effect("isolates userData under an explicit home even when the legacy path exists", () =>
+    withIdentity(
+      Effect.gen(function* () {
+        const identity = yield* DesktopAppIdentity.DesktopAppIdentity;
+        const userDataPath = yield* identity.resolveUserDataPath;
+
+        assert.equal(userDataPath, "/tmp/t3-test/electron");
+      }),
+      {
+        environment: { env: { T3CODE_HOME: "/tmp/t3-test" } },
+        legacyPathExists: true,
+      },
+    ),
+  );
+
   it.effect("preserves failures while inspecting the legacy userData path", () => {
     const legacyPath = "/Users/alice/Library/Application Support/T3 Code (Alpha)";
     const cause = PlatformError.systemError({
