@@ -189,6 +189,17 @@ describe("ssh tunnel scripts", () => {
     assert.include(buildRemoteLaunchScript(), "wait_ready");
     assert.include(buildRemoteLaunchScript(), '"$RUNNER_FILE" serve --host 127.0.0.1');
     assert.include(buildRemoteLaunchScript(), '--base-dir "$DEFAULT_SERVER_HOME"');
+    for (const script of [buildRemoteLaunchScript(), buildRemotePairingScript(target)]) {
+      assert.include(script, 'DEFAULT_SERVER_HOME="$HOME/.t3-pi"');
+    }
+    for (const script of [
+      buildRemoteLaunchScript(),
+      buildRemotePairingScript(target),
+      buildRemoteStopScript(target),
+    ]) {
+      assert.include(script, 'STATE_DIR="$HOME/.t3-pi/ssh-launch/');
+      assert.notInclude(script, "$HOME/.t3/");
+    }
     assert.notInclude(buildRemoteLaunchScript(), "server-home");
     assert.include(buildRemoteLaunchScript(), "Remote T3 server did not become ready");
     assert.include(buildRemoteLaunchScript(), 'wait_ready "60000"');
