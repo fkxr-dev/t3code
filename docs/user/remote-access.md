@@ -121,7 +121,9 @@ scheme uses HTTP, so include `https://` when your server uses HTTPS.
 In the desktop app, open **Settings → Connections → Add environment**, choose
 **SSH**, and enter a host or SSH alias such as `user@example.com`. T3 Code starts
 or reuses a server there and opens the port forward for you. Projects, provider
-credentials, and agent work stay on the remote machine.
+credentials, and agent work stay on the remote machine. In this fork, SSH launch
+uses `~/.t3-pi` on the remote machine for server discovery, startup, and pairing,
+so it connects to the side-by-side instance rather than a stock T3 Code install.
 
 The remote host needs a compatible [Node.js installation](./install.md#requirements)
 and [provider setup](./install.md#providers). If launch cannot find Node or reports
